@@ -29,12 +29,14 @@ jobs:
     
     - name: Check code formatting with black
       run: |
-        black --check .
+        black time_based_storage/src time_based_storage/tests --check
     
     - name: Lint with flake8
       run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        flake8 time_based_storage/src --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 time_based_storage/tests --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 time_based_storage/src --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        flake8 time_based_storage/tests --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Run tests
       run: |
