@@ -1,5 +1,7 @@
 # Time-Based Storage System
 
+[![CI](https://github.com/johnburbridge/python-time-based-experiment/actions/workflows/ci.yml/badge.svg)](https://github.com/johnburbridge/python-time-based-experiment/actions/workflows/ci.yml)
+
 A Python package providing two implementations of a time-based storage system for managing events with timestamps.
 
 ## Features
