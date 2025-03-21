@@ -18,6 +18,75 @@ time_based_storage/
     └── thread_safe_heap.py     # Thread-safe wrapper for heap implementation
 ```
 
+## Class Hierarchy
+
+The following diagram illustrates the class inheritance structure of the library:
+
+```mermaid
+classDiagram
+    class Generic~T~ {
+        <<interface>>
+    }
+    
+    class TimeBasedStorage~T~ {
+        -Dict~datetime, T~ _storage
+        +add(timestamp, value): void
+        +add_unique_timestamp(timestamp, value, max_offset_microseconds): datetime
+        +get_range(start_time, end_time): List~T~
+        +get_duration(duration): List~T~
+        +get_value_at(timestamp): Optional~T~
+        +remove(timestamp): bool
+        +clear(): void
+        +get_all(): List~T~
+        +get_timestamps(): List~datetime~
+        +size(): int
+        +is_empty(): bool
+    }
+    
+    class TimeBasedStorageHeap~T~ {
+        -List~Tuple~datetime, T~~ _heap
+        +add(timestamp, value): void
+        +get_range(start_time, end_time): List~T~
+        +get_duration(duration): List~T~
+        +get_earliest(): Optional~Tuple~datetime, T~~
+        +get_latest(): Optional~Tuple~datetime, T~~
+        +get_value_at(timestamp): Optional~T~
+        +remove(timestamp): bool
+        +clear(): void
+        +get_all(): List~T~
+        +get_timestamps(): List~datetime~
+        +size(): int
+        +is_empty(): bool
+    }
+    
+    class ThreadSafeTimeBasedStorage~T~ {
+        -RLock _lock
+        -Condition _condition
+        +add(timestamp, value): void
+        +get_range(start_time, end_time): List~T~
+        +get_duration(duration): List~T~
+        +wait_for_data(timeout): bool
+        +notify_data_available(): void
+    }
+    
+    class ThreadSafeTimeBasedStorageHeap~T~ {
+        -RLock _lock
+        -Condition _condition
+        +add(timestamp, value): void
+        +get_range(start_time, end_time): List~T~
+        +get_duration(duration): List~T~
+        +wait_for_data(timeout): bool
+        +notify_data_available(): void
+    }
+    
+    Generic~T~ <|-- TimeBasedStorage~T~
+    Generic~T~ <|-- TimeBasedStorageHeap~T~
+    TimeBasedStorage~T~ <|-- ThreadSafeTimeBasedStorage~T~
+    TimeBasedStorageHeap~T~ <|-- ThreadSafeTimeBasedStorageHeap~T~
+    Generic~T~ <|-- ThreadSafeTimeBasedStorage~T~
+    Generic~T~ <|-- ThreadSafeTimeBasedStorageHeap~T~
+```
+
 ### Core Components
 
 1. **`TimeBasedStorage` (core/base.py)**
