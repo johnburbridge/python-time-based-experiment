@@ -73,7 +73,7 @@ class TestThreadSafeTimeBasedStorage(unittest.TestCase):
         received_data = set()  # Use a set to track unique values
         event = threading.Event()
         data_count = 10
-        
+
         def consumer():
             while not event.is_set() or len(received_data) < data_count:
                 if self.storage.wait_for_data(timeout=0.2):  # Increased timeout for reliability
@@ -171,7 +171,7 @@ class TestThreadSafeTimeBasedStorageHeap(unittest.TestCase):
         received_data = set()  # Use a set to track unique values
         event = threading.Event()
         data_count = 10
-        
+
         def consumer():
             while not event.is_set() or len(received_data) < data_count:
                 if self.storage.wait_for_data(timeout=0.2):  # Increased timeout for reliability
