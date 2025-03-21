@@ -21,6 +21,16 @@ A Python package providing two implementations of a time-based storage system fo
   - Timestamp collision handling
   - Generic typing (store any data type)
 
+## Documentation
+
+Comprehensive documentation is available to help you get the most out of this library:
+
+- [**Architecture Guide**](time_based_storage/docs/architecture.md) - Design principles, implementation details, and performance considerations
+- [**Code Examples**](time_based_storage/docs/examples.py) - Practical usage examples and patterns
+- [**Concurrent Use Cases**](time_based_storage/docs/concurrent_use_cases.md) - Real-world scenarios for concurrent access
+
+The rest of this README provides an overview of installation, basic usage, and API reference.
+
 ## Installation
 
 ```bash
@@ -154,7 +164,11 @@ This library is well-suited for:
 - Message queues with time-based priorities
 - Session tracking
 
-For more detailed use cases for concurrent access scenarios, see [Concurrent Use Cases](time_based_storage/docs/concurrent_use_cases.md).
+For more detailed information about using this library in various scenarios, see:
+
+- [**Architecture Guide**](time_based_storage/docs/architecture.md) - Learn about the design principles and implementation details
+- [**Code Examples**](time_based_storage/docs/examples.py) - See practical examples of how to use the library
+- [**Concurrent Use Cases**](time_based_storage/docs/concurrent_use_cases.md) - Explore real-world concurrent access scenarios
 
 ## Testing
 
@@ -199,4 +213,4 @@ flake8 time_based_storage/src time_based_storage/tests
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the LICENSE file for details.
