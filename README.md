@@ -29,6 +29,7 @@ Comprehensive documentation is available to help you get the most out of this li
 - [**Architecture Guide**](docs/architecture.md) - Design principles, implementation details, and performance considerations
 - [**Code Examples**](docs/examples.py) - Practical usage examples and patterns
 - [**Concurrent Use Cases**](docs/concurrent_use_cases.md) - Real-world scenarios for concurrent access
+- [**Alternative Approaches**](docs/alternatives.md) - Limitations of current implementation and alternative storage strategies
 
 The rest of this README provides an overview of installation, basic usage, and API reference.
 
@@ -170,6 +171,7 @@ For more detailed information about using this library in various scenarios, see
 - [**Architecture Guide**](docs/architecture.md) - Learn about the design principles and implementation details
 - [**Code Examples**](docs/examples.py) - See practical examples of how to use the library
 - [**Concurrent Use Cases**](docs/concurrent_use_cases.md) - Explore real-world concurrent access scenarios
+- [**Alternative Approaches**](docs/alternatives.md) - Understand limitations and alternative storage strategies for larger datasets
 
 ## Testing
 
