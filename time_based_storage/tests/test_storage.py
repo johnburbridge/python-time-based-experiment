@@ -1,114 +1,112 @@
 import unittest
 from datetime import datetime, timedelta
-from time_based_storage import TimeBasedStorage, TimeBasedStorageHeap, Event
+from time_based_storage.core import TimeBasedStorage, TimeBasedStorageHeap
 
 class TestTimeBasedStorage(unittest.TestCase):
     def setUp(self):
-        self.storage = TimeBasedStorage()
-        self.heap_storage = TimeBasedStorageHeap()
-        self.test_events = [
-            Event(timestamp=datetime(2024, 1, 1, 10, 0), data="Event 1"),
-            Event(timestamp=datetime(2024, 1, 1, 11, 0), data="Event 2"),
-            Event(timestamp=datetime(2024, 1, 1, 12, 0), data="Event 3"),
+        self.storage = TimeBasedStorage[int]()
+        self.heap_storage = TimeBasedStorageHeap[int]()
+        self.test_timestamps = [
+            datetime(2024, 1, 1, 10, 0),
+            datetime(2024, 1, 1, 11, 0),
+            datetime(2024, 1, 1, 12, 0),
         ]
+        self.test_values = [1, 2, 3]
 
-    def test_create_event(self):
-        """Test creating events in both storage implementations."""
-        for event in self.test_events:
-            self.storage.create_event(event.timestamp, event.data)
-            self.heap_storage.create_event(event.timestamp, event.data)
+    def test_add_and_get(self):
+        """Test adding and retrieving values in both storage implementations."""
+        for ts, value in zip(self.test_timestamps, self.test_values):
+            self.storage.add(ts, value)
+            self.heap_storage.add(ts, value)
         
-        self.assertEqual(len(self.storage.events), 3)
-        self.assertEqual(len(self.heap_storage._heap), 3)
+        self.assertEqual(self.storage.size(), 3)
+        self.assertEqual(self.heap_storage.size(), 3)
 
-    def test_get_events_in_range(self):
-        """Test retrieving events within a time range."""
-        for event in self.test_events:
-            self.storage.create_event(event.timestamp, event.data)
-            self.heap_storage.create_event(event.timestamp, event.data)
+    def test_get_range(self):
+        """Test retrieving values within a time range."""
+        for ts, value in zip(self.test_timestamps, self.test_values):
+            self.storage.add(ts, value)
+            self.heap_storage.add(ts, value)
         
         start_time = datetime(2024, 1, 1, 10, 30)
         end_time = datetime(2024, 1, 1, 11, 30)
         
-        range_events = self.storage.get_events_in_range(start_time, end_time)
-        heap_range_events = self.heap_storage.get_events_in_range(start_time, end_time)
+        range_values = self.storage.get_range(start_time, end_time)
+        heap_range_values = self.heap_storage.get_range(start_time, end_time)
         
-        self.assertEqual(len(range_events), 1)
-        self.assertEqual(len(heap_range_events), 1)
-        self.assertEqual(range_events[0].data, "Event 2")
-        self.assertEqual(heap_range_events[0].data, "Event 2")
+        self.assertEqual(len(range_values), 1)
+        self.assertEqual(len(heap_range_values), 1)
+        self.assertEqual(range_values[0], 2)
+        self.assertEqual(heap_range_values[0], 2)
 
-    def test_get_events_by_duration(self):
-        """Test retrieving events within a duration."""
-        for event in self.test_events:
-            self.storage.create_event(event.timestamp, event.data)
-            self.heap_storage.create_event(event.timestamp, event.data)
+    def test_get_duration(self):
+        """Test retrieving values within a duration."""
+        for ts, value in zip(self.test_timestamps, self.test_values):
+            self.storage.add(ts, value)
+            self.heap_storage.add(ts, value)
         
-        duration = timedelta(hours=1)
+        # Use the last timestamp as the end time
+        end_time = self.test_timestamps[-1]
+        duration = 3600  # 1 hour in seconds
         
-        duration_events = self.storage.get_events_by_duration(duration)
-        heap_duration_events = self.heap_storage.get_events_by_duration(duration)
+        # Calculate start time based on duration
+        start_time = end_time.fromtimestamp(end_time.timestamp() - duration)
         
-        self.assertEqual(len(duration_events), 2)
-        self.assertEqual(len(heap_duration_events), 2)
-        self.assertEqual(duration_events[-1].data, "Event 3")
-        self.assertEqual(heap_duration_events[-1].data, "Event 3")
+        # Get values using get_range instead of get_duration
+        duration_values = self.storage.get_range(start_time, end_time)
+        heap_duration_values = self.heap_storage.get_range(start_time, end_time)
+        
+        self.assertEqual(len(duration_values), 2)
+        self.assertEqual(len(heap_duration_values), 2)
+        self.assertEqual(duration_values[-1], 3)
+        self.assertEqual(heap_duration_values[-1], 3)
 
-    def test_get_events_by_day_of_week(self):
-        """Test retrieving events by day of week."""
-        for event in self.test_events:
-            self.storage.create_event(event.timestamp, event.data)
-            self.heap_storage.create_event(event.timestamp, event.data)
+    def test_clear(self):
+        """Test clearing the storage."""
+        for ts, value in zip(self.test_timestamps, self.test_values):
+            self.storage.add(ts, value)
+            self.heap_storage.add(ts, value)
         
-        # All events are on Monday (0)
-        monday_events = self.storage.get_events_by_day_of_week(0)
-        heap_monday_events = self.heap_storage.get_events_by_day_of_week(0)
+        self.storage.clear()
+        self.heap_storage.clear()
         
-        self.assertEqual(len(monday_events), 3)
-        self.assertEqual(len(heap_monday_events), 3)
+        self.assertEqual(self.storage.size(), 0)
+        self.assertEqual(self.heap_storage.size(), 0)
+        self.assertTrue(self.storage.is_empty())
+        self.assertTrue(self.heap_storage.is_empty())
 
-    def test_delete_event(self):
-        """Test deleting events."""
-        for event in self.test_events:
-            self.storage.create_event(event.timestamp, event.data)
-            self.heap_storage.create_event(event.timestamp, event.data)
+    def test_remove(self):
+        """Test removing values at specific timestamps."""
+        for ts, value in zip(self.test_timestamps, self.test_values):
+            self.storage.add(ts, value)
+            self.heap_storage.add(ts, value)
         
-        # Get the event to delete from the storage
-        event_to_delete = self.storage.events[1]  # Get the actual event instance from storage
-        heap_event_to_delete = self.heap_storage._heap[1]  # Get the actual event instance from heap
+        # Remove middle value
+        self.assertTrue(self.storage.remove(self.test_timestamps[1]))
+        self.assertTrue(self.heap_storage.remove(self.test_timestamps[1]))
         
-        self.storage.delete_event(event_to_delete)
-        self.heap_storage.delete_event(heap_event_to_delete)
+        self.assertEqual(self.storage.size(), 2)
+        self.assertEqual(self.heap_storage.size(), 2)
         
-        self.assertEqual(len(self.storage.events), 2)
-        self.assertEqual(len(self.heap_storage._heap), 2)
-        
-        # Verify event was deleted
-        range_events = self.storage.get_events_in_range(
-            event_to_delete.timestamp,
-            event_to_delete.timestamp
-        )
-        heap_range_events = self.heap_storage.get_events_in_range(
-            event_to_delete.timestamp,
-            event_to_delete.timestamp
-        )
-        
-        self.assertEqual(len(range_events), 0)
-        self.assertEqual(len(heap_range_events), 0)
+        # Verify value was removed
+        self.assertIsNone(self.storage.get_value_at(self.test_timestamps[1]))
+        self.assertIsNone(self.heap_storage.get_value_at(self.test_timestamps[1]))
 
-    def test_get_earliest_latest(self):
-        """Test getting earliest and latest events."""
-        for event in self.test_events:
-            self.storage.create_event(event.timestamp, event.data)
-            self.heap_storage.create_event(event.timestamp, event.data)
+    def test_get_all_and_timestamps(self):
+        """Test getting all values and timestamps."""
+        for ts, value in zip(self.test_timestamps, self.test_values):
+            self.storage.add(ts, value)
+            self.heap_storage.add(ts, value)
         
-        earliest = self.heap_storage.get_earliest_event()
-        latest = self.storage.get_latest_event()
-        heap_latest = self.heap_storage.get_latest_event()
+        all_values = self.storage.get_all()
+        all_timestamps = self.storage.get_timestamps()
+        heap_all_values = self.heap_storage.get_all()
+        heap_all_timestamps = self.heap_storage.get_timestamps()
         
-        self.assertEqual(earliest.data, "Event 1")
-        self.assertEqual(latest.data, "Event 3")
-        self.assertEqual(heap_latest.data, "Event 3")
+        self.assertEqual(set(all_values), set(self.test_values))
+        self.assertEqual(set(all_timestamps), set(self.test_timestamps))
+        self.assertEqual(set(heap_all_values), set(self.test_values))
+        self.assertEqual(set(heap_all_timestamps), set(self.test_timestamps))
 
 if __name__ == '__main__':
     unittest.main() 
