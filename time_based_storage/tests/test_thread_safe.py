@@ -72,17 +72,22 @@ class TestThreadSafeTimeBasedStorage(unittest.TestCase):
         """Test the wait_for_data functionality with multiple threads."""
         received_data = set()  # Use a set to track unique values
         event = threading.Event()
-
+        data_count = 10
+        
         def consumer():
-            while not event.is_set():
-                if self.storage.wait_for_data(timeout=0.1):
+            while not event.is_set() or len(received_data) < data_count:
+                if self.storage.wait_for_data(timeout=0.2):  # Increased timeout for reliability
                     values = self.storage.get_all()
                     received_data.update(values)  # Add unique values to the set
+                    if len(received_data) >= data_count:
+                        break
 
         def producer():
-            for i in range(10):
+            for i in range(data_count):
                 self.storage.add(datetime.now(), i)
                 time.sleep(0.1)
+            # Wait a bit to ensure consumer can process the last item
+            time.sleep(0.5)
             event.set()
 
         consumer_thread = threading.Thread(target=consumer)
@@ -91,11 +96,11 @@ class TestThreadSafeTimeBasedStorage(unittest.TestCase):
         consumer_thread.start()
         producer_thread.start()
 
-        producer_thread.join()
-        consumer_thread.join()
+        producer_thread.join(timeout=5)  # Add timeout to avoid hanging
+        consumer_thread.join(timeout=5)  # Add timeout to avoid hanging
 
-        self.assertEqual(len(received_data), 10)
-        self.assertEqual(set(range(10)), received_data)  # Verify we got all expected values
+        self.assertEqual(len(received_data), data_count)
+        self.assertEqual(set(range(data_count)), received_data)  # Verify we got all expected values
 
 
 class TestThreadSafeTimeBasedStorageHeap(unittest.TestCase):
@@ -165,17 +170,22 @@ class TestThreadSafeTimeBasedStorageHeap(unittest.TestCase):
         """Test the wait_for_data functionality with multiple threads."""
         received_data = set()  # Use a set to track unique values
         event = threading.Event()
-
+        data_count = 10
+        
         def consumer():
-            while not event.is_set():
-                if self.storage.wait_for_data(timeout=0.1):
+            while not event.is_set() or len(received_data) < data_count:
+                if self.storage.wait_for_data(timeout=0.2):  # Increased timeout for reliability
                     values = self.storage.get_all()
                     received_data.update(values)  # Add unique values to the set
+                    if len(received_data) >= data_count:
+                        break
 
         def producer():
-            for i in range(10):
+            for i in range(data_count):
                 self.storage.add(datetime.now(), i)
                 time.sleep(0.1)
+            # Wait a bit to ensure consumer can process the last item
+            time.sleep(0.5)
             event.set()
 
         consumer_thread = threading.Thread(target=consumer)
@@ -184,11 +194,11 @@ class TestThreadSafeTimeBasedStorageHeap(unittest.TestCase):
         consumer_thread.start()
         producer_thread.start()
 
-        producer_thread.join()
-        consumer_thread.join()
+        producer_thread.join(timeout=5)  # Add timeout to avoid hanging
+        consumer_thread.join(timeout=5)  # Add timeout to avoid hanging
 
-        self.assertEqual(len(received_data), 10)
-        self.assertEqual(set(range(10)), received_data)  # Verify we got all expected values
+        self.assertEqual(len(received_data), data_count)
+        self.assertEqual(set(range(data_count)), received_data)  # Verify we got all expected values
 
 
 if __name__ == "__main__":
