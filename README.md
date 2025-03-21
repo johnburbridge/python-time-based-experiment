@@ -1,6 +1,7 @@
 # Time-Based Storage System
 
 [![CI](https://github.com/johnburbridge/python-time-based-experiment/actions/workflows/ci.yml/badge.svg)](https://github.com/johnburbridge/python-time-based-experiment/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/johnburbridge/python-time-based-experiment/branch/main/graph/badge.svg)](https://codecov.io/gh/johnburbridge/python-time-based-experiment)
 
 A Python package providing two implementations of a time-based storage system for managing events with timestamps. This library is useful for applications that need to efficiently store and query time-based data, such as event logs, time series data, monitoring systems, and schedulers.
 
@@ -180,6 +181,15 @@ cd time_based_storage
 python -m pytest tests/ -v
 ```
 
+Run tests with code coverage:
+
+```bash
+cd time_based_storage
+python -m pytest tests/ -v --cov=src/time_based_storage --cov-report=html
+```
+
+This will generate an HTML coverage report in the `htmlcov` directory.
+
 ## Development
 
 ### Setup Development Environment
@@ -190,7 +200,7 @@ cd python-time-based-experiment
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -e time_based_storage/
-pip install pytest black flake8
+pip install -r time_based_storage/requirements-dev.txt
 ```
 
 ### Code Style
