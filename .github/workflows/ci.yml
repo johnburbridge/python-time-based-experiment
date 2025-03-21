@@ -40,4 +40,4 @@ jobs:
     
     - name: Run tests
       run: |
-        pytest tests/ -v 
+        cd time_based_storage && pytest tests/ -v 
