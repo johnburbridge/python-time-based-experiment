@@ -1,5 +1,6 @@
 from typing import List, Optional, TypeVar, Generic, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
+import random
 
 T = TypeVar('T')
 
@@ -7,6 +8,10 @@ class TimeBasedStorage(Generic[T]):
     """
     Base class for time-based storage implementations.
     This is a non-thread-safe implementation suitable for single-threaded use.
+    
+    Note:
+        Timestamps have microsecond precision (0.000001 seconds).
+        When adding items rapidly, consider using add_unique_timestamp() to avoid collisions.
     """
     
     def __init__(self):
@@ -19,8 +24,36 @@ class TimeBasedStorage(Generic[T]):
         Args:
             timestamp: The timestamp of the value
             value: The value to store
+            
+        Raises:
+            ValueError: If a value already exists at the given timestamp
         """
+        if timestamp in self._storage:
+            raise ValueError(f"Value already exists at timestamp {timestamp}")
         self._storage[timestamp] = value
+    
+    def add_unique_timestamp(self, timestamp: datetime, value: T, max_offset_microseconds: int = 1000000) -> datetime:
+        """
+        Add a value with a guaranteed unique timestamp.
+        If the timestamp already exists, adds a random microsecond offset.
+        
+        Args:
+            timestamp: The desired timestamp
+            value: The value to store
+            max_offset_microseconds: Maximum random offset to add (default: 1 second)
+            
+        Returns:
+            The actual timestamp used (may be different from input if offset was added)
+        """
+        if timestamp not in self._storage:
+            self._storage[timestamp] = value
+            return timestamp
+            
+        # Add random offset in microseconds
+        offset = random.randint(0, max_offset_microseconds)
+        unique_timestamp = timestamp + timedelta(microseconds=offset)
+        self._storage[unique_timestamp] = value
+        return unique_timestamp
     
     def get_range(self, start_time: datetime, end_time: datetime) -> List[T]:
         """

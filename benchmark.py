@@ -1,130 +1,172 @@
 import time
 import random
-import sys
 import psutil
+import os
 from datetime import datetime, timedelta
-from typing import List, Tuple
-from time_based_storage import TimeBasedStorage, Event
-from time_based_storage_heap import TimeBasedStorageHeap
+from time_based_storage import TimeBasedStorage, TimeBasedStorageHeap
 
-def get_memory_usage() -> float:
-    """Get current memory usage in MB."""
-    process = psutil.Process()
-    return process.memory_info().rss / 1024 / 1024
-
-def generate_random_events(count: int) -> List[Tuple[datetime, str]]:
-    """Generate random events for testing."""
-    now = datetime.now()
+def generate_random_events(num_events: int) -> list:
+    """Generate a list of random events for testing."""
+    base_time = datetime.now()
     events = []
-    for i in range(count):
-        # Generate random time within last 30 days
-        random_days = random.uniform(0, 30)
+    for i in range(num_events):
+        # Generate random time within the last 24 hours with microsecond precision
         random_hours = random.uniform(0, 24)
         random_minutes = random.uniform(0, 60)
-        timestamp = now - timedelta(days=random_days, hours=random_hours, minutes=random_minutes)
-        events.append((timestamp, f"Event {i}"))
-    return sorted(events, key=lambda x: x[0])
+        random_seconds = random.uniform(0, 60)
+        random_microseconds = random.randint(0, 1000000)
+        timestamp = base_time - timedelta(
+            hours=random_hours,
+            minutes=random_minutes,
+            seconds=random_seconds,
+            microseconds=random_microseconds
+        )
+        events.append((timestamp, i))
+    return events
 
-def benchmark_insertion(events: List[Tuple[datetime, str]], storage_class) -> float:
-    """Benchmark event insertion."""
-    storage = storage_class()
-    start = time.time()
-    for timestamp, data in events:
-        storage.create_event(timestamp, data)
-    return time.time() - start
+def get_memory_usage():
+    """Get current memory usage of the process."""
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / 1024 / 1024  # Convert to MB
 
-def benchmark_range_queries(storage, num_queries: int = 1000) -> float:
-    """Benchmark range queries."""
-    if not storage.events:
-        return 0.0
+def benchmark_insertion(storage: TimeBasedStorage, heap_storage: TimeBasedStorageHeap, num_events: int):
+    """Benchmark event insertion performance."""
+    events = generate_random_events(num_events)
     
-    start = time.time()
-    for _ in range(num_queries):
-        # Generate random time range
-        random_days = random.uniform(0, 30)
-        random_hours = random.uniform(0, 24)
-        end = datetime.now()
-        start_dt = end - timedelta(days=random_days, hours=random_hours)
-        storage.get_events_in_range(start_dt, end)
-    return time.time() - start
-
-def benchmark_duration_queries(storage, num_queries: int = 1000) -> float:
-    """Benchmark duration-based queries."""
-    if not storage.events:
-        return 0.0
+    # Test TimeBasedStorage
+    start_time = time.time()
+    for timestamp, value in events:
+        storage.add(timestamp, value)
+    storage_time = time.time() - start_time
     
-    start = time.time()
+    # Test TimeBasedStorageHeap
+    start_time = time.time()
+    for timestamp, value in events:
+        heap_storage.add(timestamp, value)
+    heap_time = time.time() - start_time
+    
+    return storage_time, heap_time
+
+def benchmark_range_queries(storage: TimeBasedStorage, heap_storage: TimeBasedStorageHeap, num_queries: int):
+    """Benchmark range query performance."""
+    # Generate random time ranges
+    ranges = []
     for _ in range(num_queries):
-        # Generate random duration
-        random_hours = random.uniform(1, 24)
-        duration = timedelta(hours=random_hours)
-        storage.get_events_by_duration(duration)
-    return time.time() - start
+        start = datetime.now() - timedelta(hours=random.uniform(0, 24))
+        end = start + timedelta(hours=random.uniform(1, 12))
+        ranges.append((start, end))
+    
+    # Test TimeBasedStorage
+    start_time = time.time()
+    for start, end in ranges:
+        storage.get_range(start, end)
+    storage_time = time.time() - start_time
+    
+    # Test TimeBasedStorageHeap
+    start_time = time.time()
+    for start, end in ranges:
+        heap_storage.get_range(start, end)
+    heap_time = time.time() - start_time
+    
+    return storage_time, heap_time
 
-def benchmark_earliest_latest(storage, num_queries: int = 1000) -> float:
-    """Benchmark earliest/latest event queries."""
-    start = time.time()
+def benchmark_duration_queries(storage: TimeBasedStorage, heap_storage: TimeBasedStorageHeap, num_queries: int):
+    """Benchmark duration query performance."""
+    # Generate random durations
+    durations = [3600 * random.uniform(1, 24) for _ in range(num_queries)]  # Duration in seconds
+    
+    # Test TimeBasedStorage
+    start_time = time.time()
+    for duration in durations:
+        storage.get_duration(duration)
+    storage_time = time.time() - start_time
+    
+    # Test TimeBasedStorageHeap
+    start_time = time.time()
+    for duration in durations:
+        heap_storage.get_duration(duration)
+    heap_time = time.time() - start_time
+    
+    return storage_time, heap_time
+
+def benchmark_earliest_latest(storage: TimeBasedStorage, heap_storage: TimeBasedStorageHeap, num_queries: int):
+    """Benchmark earliest/latest event retrieval performance."""
+    # Test TimeBasedStorage
+    start_time = time.time()
     for _ in range(num_queries):
-        if isinstance(storage, TimeBasedStorageHeap):
-            storage.get_earliest_event()
-        storage.get_latest_event()
-    return time.time() - start
+        storage.get_all()  # Get all values to simulate latest event access
+    storage_time = time.time() - start_time
+    
+    # Test TimeBasedStorageHeap
+    start_time = time.time()
+    for _ in range(num_queries):
+        heap_storage.get_all()  # Get all values to simulate earliest/latest event access
+    heap_time = time.time() - start_time
+    
+    return storage_time, heap_time
 
-def run_benchmark(event_counts: List[int] = [1000, 10000, 100000, 1000000]):
-    """Run comprehensive benchmark for different dataset sizes."""
-    print("\nBenchmark Results:")
-    print("=" * 80)
-    print(f"{'Dataset Size':<15} {'Operation':<20} {'TimeBasedStorage':<20} {'TimeBasedStorageHeap':<20}")
-    print("-" * 80)
-
-    for count in event_counts:
-        print(f"\nTesting with {count:,} events:")
-        print("-" * 80)
-        
-        # Generate test data
-        events = generate_random_events(count)
-        
-        # Test insertion
-        list_time = benchmark_insertion(events, TimeBasedStorage)
-        heap_time = benchmark_insertion(events, TimeBasedStorageHeap)
-        print(f"{count:<15} {'Insertion':<20} {list_time:>8.4f}s{'':<12} {heap_time:>8.4f}s")
-        
-        # Create storage instances for query testing
-        list_storage = TimeBasedStorage()
-        heap_storage = TimeBasedStorageHeap()
-        for timestamp, data in events:
-            list_storage.create_event(timestamp, data)
-            heap_storage.create_event(timestamp, data)
-        
-        # Test range queries
-        list_time = benchmark_range_queries(list_storage)
-        heap_time = benchmark_range_queries(heap_storage)
-        print(f"{'':<15} {'Range Queries':<20} {list_time:>8.4f}s{'':<12} {heap_time:>8.4f}s")
-        
-        # Test duration queries
-        list_time = benchmark_duration_queries(list_storage)
-        heap_time = benchmark_duration_queries(heap_storage)
-        print(f"{'':<15} {'Duration Queries':<20} {list_time:>8.4f}s{'':<12} {heap_time:>8.4f}s")
-        
-        # Test earliest/latest queries
-        list_time = benchmark_earliest_latest(list_storage)
-        heap_time = benchmark_earliest_latest(heap_storage)
-        print(f"{'':<15} {'Earliest/Latest':<20} {list_time:>8.4f}s{'':<12} {heap_time:>8.4f}s")
-        
-        # Memory usage
-        list_memory = get_memory_usage()
-        heap_memory = get_memory_usage()
-        print(f"{'':<15} {'Memory Usage':<20} {list_memory:>8.2f}MB{'':<12} {heap_memory:>8.2f}MB")
+def benchmark_timestamp_collisions(storage: TimeBasedStorage, num_events: int):
+    """Benchmark handling of timestamp collisions."""
+    base_time = datetime.now()
+    collisions = 0
+    start_time = time.time()
+    
+    for i in range(num_events):
+        try:
+            storage.add(base_time, i)
+        except ValueError:
+            collisions += 1
+    
+    end_time = time.time()
+    return end_time - start_time, collisions
 
 def main():
-    print("Starting Time-Based Storage Benchmark")
-    print("=" * 80)
+    """Run all benchmarks with different dataset sizes."""
+    sizes = [1000, 10000, 100000, 1000000]
+    num_queries = 1000
     
-    # Test with different dataset sizes
-    event_counts = [1000, 10000, 100000, 1000000]
-    run_benchmark(event_counts)
+    print("Starting benchmarks...")
+    print("-" * 80)
     
-    print("\nBenchmark completed!")
+    for size in sizes:
+        print(f"\nDataset size: {size:,} events")
+        print("-" * 40)
+        
+        # Initialize storage systems
+        storage = TimeBasedStorage[int]()
+        heap_storage = TimeBasedStorageHeap[int]()
+        
+        # Run benchmarks
+        print("Running insertion benchmark...")
+        storage_insert, heap_insert = benchmark_insertion(storage, heap_storage, size)
+        
+        print("Running range queries benchmark...")
+        storage_range, heap_range = benchmark_range_queries(storage, heap_storage, num_queries)
+        
+        print("Running duration queries benchmark...")
+        storage_duration, heap_duration = benchmark_duration_queries(storage, heap_storage, num_queries)
+        
+        print("Running earliest/latest benchmark...")
+        storage_earliest, heap_earliest = benchmark_earliest_latest(storage, heap_storage, num_queries)
+        
+        print("Running timestamp collision benchmark...")
+        collision_time, collisions = benchmark_timestamp_collisions(TimeBasedStorage[int](), size)
+        
+        # Get memory usage
+        memory_usage = get_memory_usage()
+        
+        # Print results
+        print("\nResults:")
+        print(f"Insertion: TimeBasedStorage ({storage_insert:.4f}s) vs TimeBasedStorageHeap ({heap_insert:.4f}s)")
+        print(f"Range Queries: TimeBasedStorage ({storage_range:.4f}s) vs TimeBasedStorageHeap ({heap_range:.4f}s)")
+        print(f"Duration Queries: TimeBasedStorage ({storage_duration:.4f}s) vs TimeBasedStorageHeap ({heap_duration:.4f}s)")
+        print(f"Earliest/Latest: TimeBasedStorage ({storage_earliest:.4f}s) vs TimeBasedStorageHeap ({heap_earliest:.4f}s)")
+        print(f"Timestamp Collisions: {collisions:,} collisions in {collision_time:.4f}s")
+        print(f"Memory Usage: {memory_usage:.2f}MB")
+        
+        print("-" * 40)
+    
+    print("\nBenchmark completed successfully!")
 
 if __name__ == "__main__":
     main() 

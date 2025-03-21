@@ -108,5 +108,25 @@ class TestTimeBasedStorage(unittest.TestCase):
         self.assertEqual(set(heap_all_values), set(self.test_values))
         self.assertEqual(set(heap_all_timestamps), set(self.test_timestamps))
 
+    def test_timestamp_collisions(self):
+        """Test handling of timestamp collisions."""
+        timestamp = datetime(2024, 1, 1, 10, 0)
+        
+        # Test that adding with same timestamp raises ValueError
+        self.storage.add(timestamp, 1)
+        with self.assertRaises(ValueError):
+            self.storage.add(timestamp, 2)
+        
+        # Test add_unique_timestamp handles collisions
+        unique_ts = self.storage.add_unique_timestamp(timestamp, 3)
+        self.assertNotEqual(timestamp, unique_ts)
+        self.assertEqual(self.storage.get_value_at(unique_ts), 3)
+        
+        # Test that add_unique_timestamp returns original timestamp if no collision
+        new_ts = datetime(2024, 1, 1, 11, 0)
+        result_ts = self.storage.add_unique_timestamp(new_ts, 4)
+        self.assertEqual(new_ts, result_ts)
+        self.assertEqual(self.storage.get_value_at(new_ts), 4)
+
 if __name__ == '__main__':
     unittest.main() 
