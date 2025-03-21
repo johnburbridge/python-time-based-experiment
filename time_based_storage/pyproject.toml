@@ -12,4 +12,19 @@ dependencies = []
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["time_based_storage*"]
-namespaces = false 
+namespaces = false
+
+[tool.black]
+line-length = 127
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+# A regex preceded with ^/ will apply only to files and directories
+# in the root of the project.
+^/docs
+'''
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v" 

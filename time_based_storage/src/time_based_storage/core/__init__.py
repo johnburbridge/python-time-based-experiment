@@ -6,4 +6,4 @@ These implementations are not thread-safe and should be used in single-threaded 
 from .base import TimeBasedStorage
 from .heap import TimeBasedStorageHeap
 
-__all__ = ['TimeBasedStorage', 'TimeBasedStorageHeap'] 
+__all__ = ["TimeBasedStorage", "TimeBasedStorageHeap"]
