@@ -47,7 +47,7 @@ class TimeBasedStorageHeap(Generic[T]):
         start_idx = bisect.bisect_left([ts for ts, _ in self._heap], start_time)
         # Find the end index using binary search
         end_idx = bisect.bisect_right([ts for ts, _ in self._heap], end_time)
-        
+
         # Return values within the range
         return [value for _, value in self._heap[start_idx:end_idx]]
 
