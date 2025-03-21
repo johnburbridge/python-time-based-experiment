@@ -41,13 +41,13 @@ jobs:
     - name: Run tests with coverage
       run: |
         cd time_based_storage && python -m pytest tests/ -v --cov=src/time_based_storage --cov-report=xml
-    
-    - name: Upload coverage to Codecov
+
+    - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./time_based_storage/coverage.xml
-        fail_ci_if_error: false
+        slug: johnburbridge/python-time-based-experiment
+          
     - name: Upload test results to Codecov
       if: ${{ !cancelled() }}
       uses: codecov/test-results-action@v1
