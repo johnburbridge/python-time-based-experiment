@@ -44,11 +44,11 @@ class TimeBasedStorageHeap(Generic[T]):
             List of values within the specified time range
         """
         # Find the start index using binary search
-        start_idx = bisect.bisect_left(self._heap, (start_time, None))
+        start_idx = bisect.bisect_left([ts for ts, _ in self._heap], start_time)
         # Find the end index using binary search
-        end_idx = bisect.bisect_right(self._heap, (end_time, None))
-
-        # Return values in the range
+        end_idx = bisect.bisect_right([ts for ts, _ in self._heap], end_time)
+        
+        # Return values within the range
         return [value for _, value in self._heap[start_idx:end_idx]]
 
     def get_duration(self, duration: float) -> List[T]:
@@ -61,16 +61,31 @@ class TimeBasedStorageHeap(Generic[T]):
         Returns:
             List of values within the specified duration
         """
-        if not self._heap:
-            return []
-
         now = datetime.now()
         start_time = now.fromtimestamp(now.timestamp() - duration)
         return self.get_range(start_time, now)
 
-    def clear(self) -> None:
-        """Clear all stored values."""
-        self._heap.clear()
+    def get_earliest(self) -> Optional[Tuple[datetime, T]]:
+        """
+        Get the earliest value in the storage.
+
+        Returns:
+            Tuple of (timestamp, value) for the earliest entry, or None if empty
+        """
+        return self._heap[0] if self._heap else None
+
+    def get_latest(self) -> Optional[Tuple[datetime, T]]:
+        """
+        Get the latest value in the storage.
+
+        Returns:
+            Tuple of (timestamp, value) for the latest entry, or None if empty
+        """
+        if not self._heap:
+            return None
+        # Find the latest timestamp using binary search
+        latest_idx = bisect.bisect_right([ts for ts, _ in self._heap], datetime.max) - 1
+        return self._heap[latest_idx] if latest_idx >= 0 else None
 
     def get_all(self) -> List[T]:
         """
@@ -101,7 +116,7 @@ class TimeBasedStorageHeap(Generic[T]):
             The value at the specified timestamp, or None if not found
         """
         # Use binary search to find the timestamp
-        idx = bisect.bisect_left(self._heap, (timestamp, None))
+        idx = bisect.bisect_left([ts for ts, _ in self._heap], timestamp)
         if idx < len(self._heap) and self._heap[idx][0] == timestamp:
             return self._heap[idx][1]
         return None
@@ -117,11 +132,11 @@ class TimeBasedStorageHeap(Generic[T]):
             True if the value was removed, False if not found
         """
         # Use binary search to find the timestamp
-        idx = bisect.bisect_left(self._heap, (timestamp, None))
+        idx = bisect.bisect_left([ts for ts, _ in self._heap], timestamp)
         if idx < len(self._heap) and self._heap[idx][0] == timestamp:
-            # Remove the item and maintain heap property
-            self._heap[idx] = self._heap[-1]
-            self._heap.pop()
+            # Remove the item at the found index
+            self._heap.pop(idx)
+            # Reheapify the list
             heapq.heapify(self._heap)
             return True
         return False
@@ -143,3 +158,7 @@ class TimeBasedStorageHeap(Generic[T]):
             True if the storage is empty, False otherwise
         """
         return len(self._heap) == 0
+
+    def clear(self) -> None:
+        """Clear all values from the storage."""
+        self._heap.clear()
