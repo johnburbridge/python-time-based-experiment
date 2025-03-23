@@ -79,6 +79,7 @@
 - Read-write locks for different operations
 - Fine-grained locking for better concurrency
 - Deadlock prevention strategies
+- Currently implemented in ThreadSafeTimeBasedStorage, ThreadSafeTimeBasedStorageHeap, and ThreadSafeTimeBasedStorageRBTree
 
 ### 2. Lock-Free Data Structures
 - Atomic operations where possible

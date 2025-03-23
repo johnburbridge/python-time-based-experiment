@@ -11,11 +11,13 @@ time_based_storage/
 ├── core/
 │   ├── __init__.py
 │   ├── base.py        # Base implementation
-│   └── heap.py        # Heap-based implementation
+│   ├── heap.py        # Heap-based implementation
+│   └── rbtree.py      # Red-Black Tree implementation
 └── concurrent/
     ├── __init__.py
     ├── thread_safe.py          # Thread-safe wrapper for base implementation
-    └── thread_safe_heap.py     # Thread-safe wrapper for heap implementation
+    ├── thread_safe_heap.py     # Thread-safe wrapper for heap implementation
+    └── thread_safe_rbtree.py   # Thread-safe wrapper for RB-Tree implementation
 ```
 
 ## Class Hierarchy
@@ -59,6 +61,20 @@ classDiagram
         +is_empty(): bool
     }
     
+    class TimeBasedStorageRBTree~T~ {
+        -SortedDict _storage
+        +add(timestamp, value): void
+        +get_range(start_time, end_time): List~T~
+        +get_duration(duration): List~T~
+        +get_value_at(timestamp): Optional~T~
+        +remove(timestamp): bool
+        +clear(): void
+        +get_all(): List~T~
+        +get_timestamps(): List~datetime~
+        +size(): int
+        +is_empty(): bool
+    }
+    
     class ThreadSafeTimeBasedStorage~T~ {
         -RLock _lock
         -Condition _condition
@@ -79,12 +95,25 @@ classDiagram
         +notify_data_available(): void
     }
     
+    class ThreadSafeTimeBasedStorageRBTree~T~ {
+        -RLock _lock
+        -Condition _condition
+        +add(timestamp, value): void
+        +get_range(start_time, end_time): List~T~
+        +get_duration(duration): List~T~
+        +wait_for_data(timeout): bool
+        +notify_data_available(): void
+    }
+    
     Generic~T~ <|-- TimeBasedStorage~T~
     Generic~T~ <|-- TimeBasedStorageHeap~T~
+    Generic~T~ <|-- TimeBasedStorageRBTree~T~
     TimeBasedStorage~T~ <|-- ThreadSafeTimeBasedStorage~T~
     TimeBasedStorageHeap~T~ <|-- ThreadSafeTimeBasedStorageHeap~T~
+    TimeBasedStorageRBTree~T~ <|-- ThreadSafeTimeBasedStorageRBTree~T~
     Generic~T~ <|-- ThreadSafeTimeBasedStorage~T~
     Generic~T~ <|-- ThreadSafeTimeBasedStorageHeap~T~
+    Generic~T~ <|-- ThreadSafeTimeBasedStorageRBTree~T~
 ```
 
 ### Core Components
@@ -99,6 +128,11 @@ classDiagram
    - Optimized for accessing the earliest event
    - Maintains partial ordering based on timestamps
 
+3. **`TimeBasedStorageRBTree` (core/rbtree.py)**
+   - Uses Red-Black Tree implementation through SortedDict
+   - Balanced for both insertion and range queries
+   - Maintains full ordering with efficient operations
+
 ### Concurrent Components
 
 1. **`ThreadSafeTimeBasedStorage` (concurrent/thread_safe.py)**
@@ -111,14 +145,20 @@ classDiagram
    - Uses locks to ensure thread safety
    - Maintains the efficiency of the underlying heap
 
+3. **`ThreadSafeTimeBasedStorageRBTree` (concurrent/thread_safe_rbtree.py)**
+   - Thread-safe wrapper around TimeBasedStorageRBTree
+   - Uses locks to ensure thread safety
+   - Preserves the balanced performance characteristics of the RB-Tree
+
 ## Design Decisions
 
 ### 1. Implementation Variants
 
-Two different implementations were created to support different access patterns:
+Three different implementations were created to support different access patterns:
 
-- **List-based implementation**: Prioritizes efficient range queries and timestamp lookups, with O(log n) complexity for these operations but O(n) for insertions.
+- **Dictionary-based implementation**: Prioritizes efficient range queries and timestamp lookups, with O(1) for lookups but O(n) for insertions.
 - **Heap-based implementation**: Prioritizes efficient insertion and earliest event access, with O(log n) complexity for insertions but O(n log n) for range queries.
+- **Red-Black Tree implementation**: Provides balanced performance with O(log n) for both insertions and range queries, making it suitable for a wide range of use cases.
 
 This allows users to choose the implementation that best matches their access patterns.
 
@@ -156,16 +196,20 @@ This approach allows users to decide how to handle conflicts rather than silentl
 
 ### Storage Backend
 
-Both implementations use Python's built-in data structures:
+The implementations use different data structures:
 
 1. **TimeBasedStorage**:
-   - Uses a dictionary (`self.values`) for O(1) lookup by timestamp
-   - Maintains a sorted list of timestamps (`self.timestamps`)
-   - Uses binary search for range queries
+   - Uses a dictionary (`self._storage`) for O(1) lookup by timestamp
+   - Uses sorted key iteration for range queries
 
 2. **TimeBasedStorageHeap**:
    - Uses a binary min-heap for fast insertion and earliest event access
    - Uses a dictionary for direct timestamp lookup
+
+3. **TimeBasedStorageRBTree**:
+   - Uses a SortedDict from the sortedcontainers package
+   - Provides O(log n) operations for most operations
+   - Enables efficient range queries through key slicing operations
 
 ### Thread Safety Implementation
 
@@ -189,7 +233,7 @@ The library follows these error handling principles:
 3. **Idempotent operations**: Some operations are designed to be safely repeated
 4. **Clear error messages**: Error messages clearly indicate the issue
 
-## Performance Considerations
+## Performance Characteristics
 
 ### TimeBasedStorage
 
@@ -197,7 +241,7 @@ The library follows these error handling principles:
 - **Time complexity**:
   - Insertion: O(n) due to maintaining sorted order
   - Lookup by timestamp: O(1)
-  - Range queries: O(log n) using binary search
+  - Range queries: O(n) linear scan through sorted dictionary keys
   - Iteration: O(1) for accessing all events
 
 ### TimeBasedStorageHeap
@@ -209,6 +253,16 @@ The library follows these error handling principles:
   - Range queries: O(n log n)
   - Earliest event access: O(1)
 
+### TimeBasedStorageRBTree
+
+- **Space complexity**: O(n)
+- **Time complexity**:
+  - Insertion: O(log n) using Red-Black Tree
+  - Lookup by timestamp: O(log n)
+  - Range queries: O(log n + k) where k is the number of items in range
+  - Iteration: O(1) for accessing all events
+  - Benchmark results: Up to 470x faster for small targeted range queries
+
 ## Testing Strategy
 
 The library employs a comprehensive testing strategy:
@@ -218,6 +272,7 @@ The library employs a comprehensive testing strategy:
 3. **Concurrency tests** for thread-safe variants
 4. **Stress tests** to ensure performance under load
 5. **Edge case tests** for boundary conditions
+6. **Benchmark tests** to compare performance between implementations
 
 ## Future Improvements
 
