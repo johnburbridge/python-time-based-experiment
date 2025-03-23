@@ -7,12 +7,14 @@ A Python package providing two implementations of a time-based storage system fo
 
 ## Features
 
-- Two storage implementations:
-  - `TimeBasedStorage`: Uses a sorted list for efficient range queries
+- Three storage implementations:
+  - `TimeBasedStorage`: Uses a dictionary for simple key-value access
   - `TimeBasedStorageHeap`: Uses a heap for efficient insertion and earliest event access
+  - `TimeBasedStorageRBTree`: Uses a Red-Black Tree for balanced performance (O(log n) insertions and efficient range queries)
 - Thread-safe variants:
   - `ThreadSafeTimeBasedStorage`: Thread-safe version of TimeBasedStorage
   - `ThreadSafeTimeBasedStorageHeap`: Thread-safe version of TimeBasedStorageHeap
+  - `ThreadSafeTimeBasedStorageRBTree`: Thread-safe version of TimeBasedStorageRBTree
 - Support for:
   - Event creation and deletion
   - Range queries
@@ -106,31 +108,37 @@ consumer_thread.start()
 ## Choosing the Right Implementation
 
 ### TimeBasedStorage
-- **Best for**: Applications with frequent range queries or sorted access patterns
-- **Advantages**: Efficient range queries, direct index access
-- **Trade-offs**: Slower insertion (O(n))
+- **Best for**: Applications with small to medium datasets and simple access patterns
+- **Advantages**: Efficient range queries, direct index access, simple implementation
+- **Trade-offs**: Slower insertion (O(n)) especially with sorted data
 
 ### TimeBasedStorageHeap
 - **Best for**: Applications needing fast insertion or frequent access to earliest events
-- **Advantages**: Fast insertion, efficient earliest event access
-- **Trade-offs**: Less efficient for range queries
+- **Advantages**: Fast insertion (O(log n)), efficient earliest event access (O(1))
+- **Trade-offs**: Less efficient for range queries (O(n log n))
+
+### TimeBasedStorageRBTree
+- **Best for**: Applications requiring balanced performance across operations, especially range queries
+- **Advantages**: Fast insertion (O(log n)), highly efficient range queries (O(log n + k)), maintains performance with sorted data
+- **Trade-offs**: Slightly higher memory overhead, dependency on sortedcontainers package
+- **Benchmark highlights**: Up to 470x faster for small precise range queries, 114x average speedup for range operations
 
 ## API Reference
 
-### Common Methods (Both Implementations)
+### Common Methods (All Implementations)
 
-| Method | Description | Time Complexity |
-|--------|-------------|-----------------|
-| `add(timestamp, value)` | Add a value at a specific timestamp | O(n) / O(log n) |
-| `get_value_at(timestamp)` | Get value at a specific timestamp | O(1) / O(n) |
-| `get_range(start, end)` | Get values in a time range | O(log n) / O(n log n) |
-| `get_duration(seconds)` | Get values within a duration | O(log n) / O(n log n) |
-| `remove(timestamp)` | Remove value at a timestamp | O(n) / O(log n) |
-| `clear()` | Remove all values | O(1) |
-| `size()` | Get number of stored events | O(1) |
-| `is_empty()` | Check if storage is empty | O(1) |
-| `get_all()` | Get all stored values | O(1) |
-| `get_timestamps()` | Get all timestamps | O(1) |
+| Method | Description | Time Complexity (Standard/Heap/RBTree) |
+|--------|-------------|-----------------------------------------|
+| `add(timestamp, value)` | Add a value at a specific timestamp | O(n) / O(log n) / O(log n) |
+| `get_value_at(timestamp)` | Get value at a specific timestamp | O(1) / O(n) / O(1) |
+| `get_range(start, end)` | Get values in a time range | O(n) / O(n log n) / O(log n + k) |
+| `get_duration(seconds)` | Get values within a duration | O(n) / O(n log n) / O(log n + k) |
+| `remove(timestamp)` | Remove value at a timestamp | O(n) / O(log n) / O(log n) |
+| `clear()` | Remove all values | O(1) / O(1) / O(1) |
+| `size()` | Get number of stored events | O(1) / O(1) / O(1) |
+| `is_empty()` | Check if storage is empty | O(1) / O(1) / O(1) |
+| `get_all()` | Get all stored values | O(1) / O(1) / O(1) |
+| `get_timestamps()` | Get all timestamps | O(1) / O(1) / O(1) |
 | `add_unique_timestamp()` | Add with timestamp collision handling | Varies |
 
 ### Thread-Safe Additional Methods
@@ -144,9 +152,10 @@ consumer_thread.start()
 
 ### TimeBasedStorage
 - Insertion: O(n)
-- Range Queries: O(log n)
-- Duration Queries: O(log n)
-- Earliest/Latest: O(1)
+- Range Queries: O(n)
+- Duration Queries: O(n)
+- Earliest/Latest: O(n)
+- Memory Usage: Lower overhead per element
 
 ### TimeBasedStorageHeap
 - Insertion: O(log n)
@@ -154,6 +163,22 @@ consumer_thread.start()
 - Duration Queries: O(n log n)
 - Earliest Event: O(1)
 - Latest Event: O(n log n)
+- Memory Usage: Moderate overhead
+
+### TimeBasedStorageRBTree
+- Insertion: O(log n)
+- Range Queries: O(log n + k) where k is the number of items in range
+- Duration Queries: O(log n + k)
+- Earliest Event: O(log n)
+- Latest Event: O(log n)
+- Memory Usage: Slightly higher overhead
+
+**Benchmark Results** (500,000 entries):
+- Range query performance: **~114x average speedup** over standard implementation
+- Small precise range queries (0.01% of data): **~470x faster**
+- Small range queries (0.1% of data): **~87x faster**
+- Medium range queries (1% of data): **~12x faster**
+- Most beneficial for targeted range queries on large datasets
 
 ## Use Cases
 
