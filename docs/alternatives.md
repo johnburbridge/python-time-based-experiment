@@ -2,9 +2,42 @@
 
 This document explores the limitations of the current implementation of time-based storage using Python's native data structures and discusses alternative approaches with their respective trade-offs.
 
-## Limitations of Current Implementation
+## Current Implementations
 
-The current implementation uses Python's native data structures (dictionaries, lists, and heaps), which come with several limitations:
+The time-based storage package currently provides three implementations with different performance characteristics:
+
+### 1. TimeBasedStorage (Dictionary-Based)
+
+- **Data structure**: Python dictionaries with timestamp keys
+- **Characteristics**:
+  - Simple implementation with minimal dependencies
+  - O(1) lookup for specific timestamps
+  - O(n) insertion time due to maintaining sorted access
+  - Works well for small to medium datasets
+
+### 2. TimeBasedStorageHeap (Heap-Based)
+
+- **Data structure**: Python's heapq module with a min-heap
+- **Characteristics**:
+  - O(log n) insertion time
+  - O(1) access to earliest event
+  - O(n log n) for range queries
+  - Efficient for event processing where earliest events are prioritized
+
+### 3. TimeBasedStorageRBTree (Red-Black Tree)
+
+- **Data structure**: SortedDict from sortedcontainers package (Red-Black Tree)
+- **Characteristics**:
+  - Balanced O(log n) performance for both insertions and queries
+  - Efficient O(log n + k) range queries where k is the number of items in range
+  - Up to 470x speedup for small targeted range queries compared to the dictionary-based implementation
+  - Requires the sortedcontainers package dependency
+
+All implementations provide thread-safe variants for concurrent access and share the same core API.
+
+## Limitations of Current Implementations
+
+Despite having multiple implementations optimized for different use cases, all current implementations share some limitations:
 
 ### Memory Constraints
 
@@ -12,18 +45,6 @@ The current implementation uses Python's native data structures (dictionaries, l
 - **Python objects overhead**: Each timestamp-value pair carries Python object overhead
 - **No compression**: Data is stored uncompressed, using more memory than necessary
 - **Copy semantics**: Range queries and other operations create copies of data
-
-### Performance Limitations
-
-- **TimeBasedStorage (sorted list/dictionary)**:
-  - O(n) insertion time as items must maintain sort order
-  - Not optimized for very large datasets (>100K entries)
-  - Full scan required for some operations
-
-- **TimeBasedStorageHeap**:
-  - O(n log n) for range queries which requires scanning the entire heap
-  - Inefficient for latest event access (requires a full heap traversal)
-  - Extra overhead for maintaining heap property
 
 ### Persistence Issues
 
@@ -57,11 +78,6 @@ The current implementation uses Python's native data structures (dictionaries, l
   - Optimized for disk operations and range queries
   - Better for larger datasets with frequent range access
   - More complex implementation than current approach
-
-- **Red-Black Trees**:
-  - Self-balancing with guaranteed O(log n) operations
-  - Consistent performance regardless of data distribution
-  - More complex than binary search trees
 
 - **Skip Lists**:
   - Probabilistic alternative to balanced trees
@@ -197,17 +213,22 @@ The current implementation uses Python's native data structures (dictionaries, l
 
 ### For Small to Medium-Scale Applications
 
-1. **Add Persistence Layer**:
+1. **Use the Right Implementation for Your Needs**:
+   - **TimeBasedStorage**: Simple use cases with small datasets
+   - **TimeBasedStorageHeap**: When you need fast insertion and earliest-event access
+   - **TimeBasedStorageRBTree**: When you need balanced performance and frequent range queries
+
+2. **Add Persistence Layer**:
    - Implement serialization/deserialization to/from disk
    - Consider using pickle, JSON, or MessagePack
    - Add options for periodic automatic saving
 
-2. **Implement Time-Based Partitioning**:
+3. **Implement Time-Based Partitioning**:
    - Separate storage by time periods (days/weeks/months)
    - Enable efficient archiving of older data
    - Reduce memory usage for full dataset
 
-3. **Add TTL and Cleanup**:
+4. **Add TTL and Cleanup**:
    - Automatic pruning of old data
    - Configurable retention policies
    - Background cleanup process
@@ -248,7 +269,7 @@ The current implementation uses Python's native data structures (dictionaries, l
 
 ## Conclusion
 
-The current implementation with Python's native data structures provides a simple, easy-to-understand approach for time-based storage. However, as requirements grow in terms of data volume, query complexity, or performance needs, alternative approaches may become necessary.
+The current implementations provide options for different use cases, with the Red-Black Tree offering a good balance of performance for most scenarios. However, as requirements grow in terms of data volume, query complexity, or performance needs, alternative approaches may become necessary.
 
 The right choice depends on specific requirements:
 - Data volume and growth rate
