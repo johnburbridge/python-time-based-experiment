@@ -23,12 +23,9 @@ class TestTimeBasedStorageRBTree(unittest.TestCase):
         self.storage.add(self.now - timedelta(minutes=5), "value2")
         self.storage.add(self.now, "value3")
         self.storage.add(self.now + timedelta(minutes=5), "value4")
-        
+
         # Test range query
-        values = self.storage.get_range(
-            self.now - timedelta(minutes=7),
-            self.now + timedelta(minutes=1)
-        )
+        values = self.storage.get_range(self.now - timedelta(minutes=7), self.now + timedelta(minutes=1))
         self.assertEqual(set(values), {"value2", "value3"})
 
     def test_duplicate_timestamp(self):
@@ -40,11 +37,11 @@ class TestTimeBasedStorageRBTree(unittest.TestCase):
         # Add first value
         ts1 = self.storage.add_unique_timestamp(self.now, "value1")
         self.assertEqual(ts1, self.now)
-        
+
         # Add second value with same timestamp
         ts2 = self.storage.add_unique_timestamp(self.now, "value2")
         self.assertNotEqual(ts1, ts2)
-        
+
         # Verify both values are stored
         self.assertEqual(self.storage.size(), 2)
 
@@ -52,11 +49,11 @@ class TestTimeBasedStorageRBTree(unittest.TestCase):
         # Add values with timestamps in the past
         old_time = datetime.now() - timedelta(seconds=10)
         self.storage.add(old_time, "old value")
-        
+
         # Add recent value
         recent_time = datetime.now() - timedelta(seconds=1)
         self.storage.add(recent_time, "recent value")
-        
+
         # Get values from last 5 seconds
         values = self.storage.get_duration(5)
         self.assertIn("recent value", values)
@@ -110,11 +107,11 @@ class TestThreadSafeTimeBasedStorageRBTree(unittest.TestCase):
     def test_wait_timeout(self):
         # Wait with a short timeout when no data is available
         result = self.storage.wait_for_data(timeout=0.01)
-        
+
         # Verify wait timed out
         self.assertFalse(result)
         self.assertTrue(self.storage.is_empty())
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

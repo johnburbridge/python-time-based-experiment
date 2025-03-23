@@ -10,7 +10,7 @@ class ThreadSafeTimeBasedStorageRBTree(TimeBasedStorageRBTree[T], Generic[T]):
     """
     Thread-safe implementation of TimeBasedStorageRBTree using Python's threading module.
     This implementation provides safe concurrent access to the Red-Black Tree storage using read-write locks.
-    
+
     Benefits over the standard ThreadSafeTimeBasedStorage:
     - Better insertion performance: O(log n) vs O(n)
     - Better range query performance: O(log n + k) vs O(n) where k is the number of items in range
@@ -173,4 +173,4 @@ class ThreadSafeTimeBasedStorageRBTree(TimeBasedStorageRBTree[T], Generic[T]):
         This is automatically called by add() and add_unique_timestamp().
         """
         with self._lock:
-            self._condition.notify_all() 
+            self._condition.notify_all()

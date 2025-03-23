@@ -11,14 +11,14 @@ class TimeBasedStorageRBTree(Generic[T]):
     Red-Black Tree implementation of time-based storage.
     This implementation uses SortedDict from sortedcontainers which provides
     Red-Black Tree performance characteristics.
-    
+
     This is a non-thread-safe implementation suitable for single-threaded use.
-    
+
     Compared to the base TimeBasedStorage:
     - Better insertion performance: O(log n) vs O(n)
     - Equivalent lookup performance: O(1)
     - Better range query performance: O(log n + k) vs O(n) where k is the number of items in range
-    
+
     Note:
         Timestamps have microsecond precision (0.000001 seconds).
         When adding items rapidly, consider using add_unique_timestamp() to avoid collisions.
@@ -158,4 +158,4 @@ class TimeBasedStorageRBTree(Generic[T]):
         Returns:
             True if the storage is empty, False otherwise
         """
-        return len(self._storage) == 0 
+        return len(self._storage) == 0
