@@ -2,4 +2,5 @@ pytest>=7.0.0
 black>=23.0.0
 flake8>=6.0.0
 pytest-cov>=4.0.0
-codecov>=2.1.12 
+codecov>=2.1.12
+sortedcontainers>=2.4.0 

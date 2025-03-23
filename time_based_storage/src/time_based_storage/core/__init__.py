@@ -5,5 +5,6 @@ These implementations are not thread-safe and should be used in single-threaded 
 
 from .base import TimeBasedStorage
 from .heap import TimeBasedStorageHeap
+from .rbtree import TimeBasedStorageRBTree
 
-__all__ = ["TimeBasedStorage", "TimeBasedStorageHeap"]
+__all__ = ["TimeBasedStorage", "TimeBasedStorageHeap", "TimeBasedStorageRBTree"]
